@@ -1,0 +1,61 @@
+# Path Configuration
+dataset_path: 
+- "/home/soonbeom/Projects/Dataset/saebyul_dataset"
+- "/home/soonbeom/Projects/Dataset/marg_dataset"
+feature_path: "./feature/default"
+checkpoint_path: "./save/default"
+
+# Feature Configuration
+num_speaker: 2
+num_char: 47
+min_note: 45
+num_note: 36
+
+length_c: 5 # consonant length
+length_offset: 8 # 0.1s
+min_unvoice: 20 # 0.3s
+max_unvoice: 56 # 0.8s 
+min_length: 80 # 1s
+max_length: 400 # 5s
+
+sample_rate: 22050
+fft_size: 2048
+hop_size: 275
+win_size: 1100
+mel_size: 80
+mel_fmin: 40.0
+mel_fmax: null
+min_level_db: -100
+ref_level_db: 20
+
+# Model Configuration
+text_embed_size: 256
+prenet_size: [256, 128]
+encoder_size: 128
+encoder_K: 16
+
+speaker_embed_size: 8
+alignment_size: 256
+
+decoder_size: 512
+postnet_size: 256
+postnet_K: 8
+
+num_highways: 4
+reduction: 1
+dropout: 0.5
+clip_grad_norm: 1.0
+
+# Optimizer Configuration 
+learn_rate: 1.0E-3 
+weight_decay: 1.0E-6
+step_size: 40
+factor: 0.5
+
+# Train Configuration
+num_proc: 1
+batch_size: 4
+device: [0]
+save_epoch: 1
+stop_epoch: 500
+test_run: false
