@@ -48,7 +48,7 @@ clip_grad_norm: 1.0
 
 # Optimizer Configuration 
 learn_rate: 1.0E-3 
-weight_decay: 1.0E-6
+weight_decay: 0
 step_size: 40
 factor: 0.5
 

@@ -71,8 +71,8 @@ class Decoder(nn.Module):
     
     def forward(self, x, mel_inputs):
         self.initialize(x)
+        
         x = x.transpose(0, 1)
-
         mel_inputs = mel_inputs.transpose(0, 1)
         mel_input = mel_inputs[0]
         
