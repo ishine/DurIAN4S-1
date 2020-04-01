@@ -29,16 +29,15 @@ def main():
     criterion = torch.nn.L1Loss()
 
     mel = []
-    #y_prev = set_device(torch.zeros(1, config.mel_size, 1), config.device)
+    y_prev = set_device(torch.zeros(1, config.mel_size, 1), config.device)
     for batch in tqdm(dataloader, leave=False, ascii=True):
-        x, y_prev, y = set_device(batch, config.device)
+        x, _, _ = set_device(batch, config.device)
+        
         y_gen, y_decoder_gen = model(x, y_prev)
-
-        loss = criterion(y_gen, y) + criterion(y_decoder_gen, y)
         y_gen = y_gen.clamp(0, 1)
 
         mel.append(y_gen.data.cpu())
-        #y_prev = y_gen[...,-1].unsqueeze(-1)
+        y_prev = y_gen[...,-1].unsqueeze(-1)
 
     mel = torch.cat(mel, dim=-1)
     wavernn = WaveRNN(config)

@@ -73,6 +73,7 @@ class CBHG(nn.Module):
 
         # Bidirectional RNN
         self.rnn = nn.GRU(input_size, input_size, batch_first=True, bidirectional=True)
+        self.rnn.flatten_parameters()
 
     def forward(self, x, lengths=None):
         x = x.transpose(1, 2)
@@ -96,7 +97,7 @@ class CBHG(nn.Module):
         # Bidirectional RNN
         if lengths is not None:
             x = nn.utils.rnn.pack_padded_sequence(x, lengths, batch_first=True)
-
+            
         self.rnn.flatten_parameters()
         outputs, _ = self.rnn(x)
 
