@@ -1,6 +1,6 @@
 # Path Configuration
-audio_path: '/home/soonbeom/Projects/Dataset/saebyul_dataset/wav/sun_kr_3d.wav'
-model_path: './save/default/epoch112.pth'
+audio_path: '/home/soonbeom/Projects/Dataset/saebyul_dataset/wav/star_kr_0u.wav'
+model_path: './save/default/epoch1.pth'
 wavernn_path: './save/wavernn/ljspeech_800k.pt'
 
 # Feature Configuration
@@ -15,7 +15,7 @@ length_offset: 8 # 0.1s
 min_unvoice: 20 # 0.3s
 max_unvoice: 56 # 0.8s 
 min_length: 80 # 1s
-max_length: 400 # 6s
+max_length: 400 # 5s
 
 sample_rate: 22050
 fft_size: 2048
