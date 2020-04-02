@@ -22,29 +22,25 @@ def main():
     dataloader = dataprocess.load_infer(data)
 
     model = Tacotron(config)
-    model.load_state_dict(torch.load(config.model_path, map_location='cpu'), strict=False)
+    model.load_state_dict(torch.load(config.model_path, map_location='cpu')['state_dict'])
     model = set_device(model, config.device)
     model.eval()
-
-    criterion = torch.nn.L1Loss()
 
     mel = []
     y_prev = set_device(torch.zeros(1, config.mel_size, 1), config.device)
     for batch in tqdm(dataloader, leave=False, ascii=True):
-        x, _, _ = set_device(batch, config.device)
+        x, y_prev, _ = set_device(batch, config.device)
         
-        y_gen, y_decoder_gen = model(x, y_prev)
-        y_gen = y_gen.clamp(0, 1)
-
+        y_gen, _ = model(x, y_prev)
         mel.append(y_gen.data.cpu())
         y_prev = y_gen[...,-1].unsqueeze(-1)
 
     mel = torch.cat(mel, dim=-1)
     wavernn = WaveRNN(config)
-    wavernn.load_state_dict(torch.load(config.wavernn_path, map_location='cpu'), strict=False)
+    wavernn.load_state_dict(torch.load(config.wavernn_path, map_location='cpu'))
 
     wave = wavernn.generate(mel, config.batched, config.target_samples, config.overlap, config.mu_law).cpu()
-    save = FileXT(config.model_path.replace('.pt', '_') + wav.basename)
+    save = FileXT(config.model_path.replace('.pt', '_') +  + wav.basename)
     torchaudio.save(save.filename, wave, config.sample_rate)
 
     print('Audio generated to \'%s\'' % (save.filename))

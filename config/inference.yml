@@ -1,6 +1,6 @@
 # Path Configuration
 audio_path: '/home/soonbeom/Projects/Dataset/saebyul_dataset/wav/star_kr_0u.wav'
-model_path: './save/default/epoch1.pth'
+model_path: './save/default/epoch1.pt'
 wavernn_path: './save/wavernn/ljspeech_800k.pt'
 
 # Feature Configuration
