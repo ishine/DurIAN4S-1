@@ -15,7 +15,7 @@ def main():
     config = ConfigXT()
 
     load = FileXT(config.audio_path)
-    y, sample_rate = torchaudio.load(load.filename)
+    y = dsp.load(load.filename, config.sample_rate)
     mel = dsp.melspectrogram(y, config, squeeze=False)
     mel = set_device(mel, config.device)
 
@@ -24,7 +24,7 @@ def main():
     model = set_device(model, config.device)
 
     y_rec = model.generate(mel, config.batched, config.target_samples, config.overlap, config.mu_law).cpu()
-    save = FileXT(config.model_path.replace('.pt', '_') + load.basename)
+    save = FileXT(config.wavernn_path.replace('.pt', '_') + load.basename)
     torchaudio.save(save.filename, y_rec, config.sample_rate)
 
     print(save.filename)

@@ -256,7 +256,7 @@ def read_file_list(filename):
 def transpose(x):
     return list(map(list, zip(*x)))
 
-def flatlist(x):
+def flatten(x):
     flatlist = []
     for sublist in x:
         for item in sublist:
@@ -297,11 +297,11 @@ def main():
             train_var = [preprocess(f, index=i, config=config) for f in train_list]
             valid_var = [preprocess(f, index=i, config=config) for f in valid_list]
         
-        train_var_list.append(flatlist(train_var))
-        valid_var_list.append(flatlist(valid_var))
+        train_var_list.append(flatten(train_var))
+        valid_var_list.append(flatten(valid_var))
 
-    train_var_list = flatlist(train_var_list)
-    valid_var_list = flatlist(valid_var_list)
+    train_var_list = flatten(train_var_list)
+    valid_var_list = flatten(valid_var_list)
     
     dataset = [train_var_list, valid_var_list]
     for i in range(len(set_list)):

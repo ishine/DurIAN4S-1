@@ -40,7 +40,7 @@ def main():
     wavernn.load_state_dict(torch.load(config.wavernn_path, map_location='cpu'))
 
     wave = wavernn.generate(mel, config.batched, config.target_samples, config.overlap, config.mu_law).cpu()
-    save = FileXT(config.model_path.replace('.pt', '_') +  + wav.basename)
+    save = FileXT(config.model_path.replace('.pt', '_speaker') + str(config.speaker) + '_' + wav.basename)
     torchaudio.save(save.filename, wave, config.sample_rate)
 
     print('Audio generated to \'%s\'' % (save.filename))
