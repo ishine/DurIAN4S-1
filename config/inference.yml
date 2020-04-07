@@ -58,9 +58,9 @@ compute_size: 128
 res_out_size: 128
 res_blocks: 10
 
-batched: true
-target_samples: 11000
-overlap: 550 
+batched_infer: true
+target_size: 11000
+overlap_size: 550 
 
 # Inference Configuration
 batch_size: 1

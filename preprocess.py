@@ -214,7 +214,7 @@ def find_error(inputs):
         
     return error, error_message
 
-def preprocess(filename, index, config):
+def preprocess(filename, index, config, verbose=True):
     basename = filename.split('/')[-1]
     dataset_path = '/'.join(filename.split('/')[:-2])
     txt = FileXT(dataset_path, 'txt', basename, '.txt')
@@ -243,7 +243,9 @@ def preprocess(filename, index, config):
         mel.append(features[2][:,extended_range])
 
     data = phoneme, speaker, duration, f0, rmse, position, mel
-    print(basename)
+    
+    if verbose:
+        print(basename)
 
     return transpose(data)
 

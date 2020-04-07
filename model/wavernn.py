@@ -115,10 +115,14 @@ class WaveRNN(nn.Module):
         self.fc3 = nn.Linear(config.fc_size, self.n_classes)
 
         self.register_buffer('step', torch.zeros(1, dtype=torch.long))
-        self.num_params()
 
         # Avoid fragmentation of RNN parameters and associated warning
         self._flatten_parameters()
+
+        self.mu_law = config.mu_law
+        self.batched_infer = config.batched_infer
+        self.target_size = config.target_size
+        self.overlap_size = config.overlap_size
 
     def forward(self, x, mels):
         device = next(self.parameters()).device  # use same device as parameters
@@ -158,11 +162,11 @@ class WaveRNN(nn.Module):
         x = F.relu(self.fc2(x))
         return self.fc3(x)
 
-    def generate(self, mel, batched, target, overlap, mu_law):
+    def infer(self, mel):
         self.eval()
 
-        mu_law = mu_law if self.mode == 'RAW' else False
-
+        self.mu_law = self.mu_law if self.mode == 'RAW' else False
+        
         output = []
         # start = time.time()
         rnn1 = self.get_gru_cell(self.rnn1)
@@ -173,9 +177,9 @@ class WaveRNN(nn.Module):
             mel = self.pad_tensor(mel.transpose(1, 2), pad=self.pad, side='both')
             mel, aux = self.upsample(mel.transpose(1, 2))
 
-            if batched:
-                mel = self.fold_with_overlap(mel, target, overlap)
-                aux = self.fold_with_overlap(aux, target, overlap)
+            if self.batched_infer:
+                mel = self.fold_with_overlap(mel, self.target_size, self.overlap_size)
+                aux = self.fold_with_overlap(aux, self.target_size, self.overlap_size)
 
             b_size, seq_len, _ = mel.size()
 
@@ -229,20 +233,12 @@ class WaveRNN(nn.Module):
                 # if i % 100 == 0: self.gen_display(i, seq_len, b_size, start)
 
         output = torch.stack(output).transpose(0, 1).double()
-        if mu_law:
+        if self.mu_law:
             output = decode_mu_law(output, self.n_classes, False)
-        if batched:
-            output = xfade_and_unfold(output, target, overlap)
+        if self.batched_infer:
+            output = xfade_and_unfold(output, self.target_size, self.overlap_size)
         
         output = output[:wave_len]
-        '''
-        # Fade-out at the end to avoid signal cutting out suddenly
-        fade_out = np.linspace(1, 0, 20 * self.hop_size)
-        output = output[:wave_len]
-        output[-20 * self.hop_size:] *= fade_out
-
-        #save_wav(output, save_path)
-        '''
 
         return output
 
@@ -266,16 +262,16 @@ class WaveRNN(nn.Module):
             padded[:, :t, :] = x
         return padded
 
-    def fold_with_overlap(self, x, target, overlap):
+    def fold_with_overlap(self, x, target_size, overlap_size):
 
         ''' Fold the tensor with overlap for quick batched inference.
             Overlap will be used for crossfading in xfade_and_unfold()
 
         Args:
-            x (tensor)    : Upsampled conditioning features.
-                            shape=(1, timesteps, features)
-            target (int)  : Target timesteps for each index of batch
-            overlap (int) : Timesteps for both xfade and rnn warmup
+            x (tensor)          : Upsampled conditioning features.
+                                  shape=(1, timesteps, features)
+            target_size (int)   : Target timesteps for each index of batch
+            overlap_size (int)  : Timesteps for both xfade and rnn warmup
 
         Return:
             (tensor) : shape=(num_folds, target + 2 * overlap, features)
@@ -295,22 +291,22 @@ class WaveRNN(nn.Module):
         _, total_len, features = x.size()
 
         # Calculate variables needed
-        num_folds = (total_len - overlap) // (target + overlap)
-        extended_len = num_folds * (overlap + target) + overlap
+        num_folds = (total_len - overlap_size) // (target_size + overlap_size)
+        extended_len = num_folds * (overlap_size + target_size) + overlap_size
         remaining = total_len - extended_len
 
         # Pad if some time steps poking out
         if remaining != 0:
             num_folds += 1
-            padding = target + 2 * overlap - remaining
+            padding = target_size + 2 * overlap_size - remaining
             x = self.pad_tensor(x, padding, side='after')
 
-        folded = x.new_zeros(num_folds, target + 2 * overlap, features)
+        folded = x.new_zeros(num_folds, target_size + 2 * overlap_size, features)
 
         # Get the values for the folded tensor
         for i in range(num_folds):
-            start = i * (target + overlap)
-            end = start + target + 2 * overlap
+            start = i * (target_size + overlap_size)
+            end = start + target_size + 2 * overlap_size
             folded[i] = x[:, start:end, :]
 
         return folded
