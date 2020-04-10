@@ -28,7 +28,17 @@ def frame(x, win_size, hop_size):
 
     return y
 
+def to_tensor(x):
+    try:
+        x = torch.tensor(x)
+    except:
+        raise AssertionError("Invalid input type")
+
+    return x 
+
 def amp2db(x, min_level_db=None):
+    x = to_tensor(x)
+
     x = 20.0*torch.log10(x)
     if min_level_db is not None:
         x = torch.max(x, min_level_db)
@@ -36,12 +46,18 @@ def amp2db(x, min_level_db=None):
     return x 
 
 def db2amp(x):
+    x = to_tensor(x)
+
     return torch.pow(10.0, x*0.05)
 
 def hz2midi(x):
+    x = to_tensor(x)
+
     return 69.0 + 12.0*torch.log2(x/440.0)
 
 def midi2hz(x):
+    x = to_tensor(x)
+
     return 440.0*torch.pow(2.0, (x - 69)/12)
 
 def normalize(x, min_level_db):
@@ -51,12 +67,16 @@ def denormalize(x, min_level_db):
     return x.clamp(0, 1)*(-min_level_db) + min_level_db
 
 def f0_normalize(x, min_note, max_note):
+    x = to_tensor(x)
+
     x = hz2midi(x)
     x = (x - min_note)/(max_note - min_note)
 
     return torch.clamp(x, 0, 1)
 
 def f0_denormalize(x, min_note, max_note):
+    x = to_tensor(x)
+
     x = x.clamp(0, 1)
     x = (max_note - min_note)*x + min_note
 
@@ -112,8 +132,15 @@ def stft(y, config):
 
 def spectrogram(y, config, squeeze=True):
     spec = stft(y, config)
-    spec = amp2db(spec) - config.ref_level_db
-    spec = normalize(spec, config.min_level_db)
+    if config.normalize == 'db':
+        spec = amp2db(spec) - config.ref_level_db
+        spec = normalize(spec, config.min_level_db)
+    elif config.normalize == 'log':
+        min_level = db2amp(config.min_level_db)
+        spec = torch.log(torch.clamp(spec, min=min_level))
+    else:
+        raise AssertionError("Invalid normalization type!")
+
     if squeeze:
         spec = spec.squeeze(0)
     
@@ -129,7 +156,11 @@ def melspectrogram(y, config, squeeze=True):
     mel_filter = torch.from_numpy(mel_filter)
     mel_filter = set_device(mel_filter, config.device)
     mel = torch.matmul(mel_filter, spec)
-    mel = normalize(amp2db(mel), config.min_level_db)
+    if config.normalize == 'db':
+        mel = normalize(amp2db(mel), config.min_level_db)
+    elif config.normalize == 'log':
+        min_level = db2amp(config.min_level_db)
+        mel = torch.log(torch.clamp(mel, min=min_level))
 
     if squeeze:
         mel = mel.squeeze(0)

@@ -25,6 +25,7 @@ win_size: 1100
 mel_size: 80
 mel_fmin: 40.0
 mel_fmax: null
+normalize_type: "db" # db, log
 min_level_db: -100
 ref_level_db: 20
 
