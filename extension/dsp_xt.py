@@ -29,10 +29,8 @@ def frame(x, win_size, hop_size):
     return y
 
 def to_tensor(x):
-    try:
+    if not isinstance(x, torch.Tensor):
         x = torch.tensor(x)
-    except:
-        raise AssertionError("Invalid input type")
 
     return x 
 
@@ -132,10 +130,10 @@ def stft(y, config):
 
 def spectrogram(y, config, squeeze=True):
     spec = stft(y, config)
-    if config.normalize == 'db':
+    if config.norm_type == 'db':
         spec = amp2db(spec) - config.ref_level_db
         spec = normalize(spec, config.min_level_db)
-    elif config.normalize == 'log':
+    elif config.norm_type == 'log':
         min_level = db2amp(config.min_level_db)
         spec = torch.log(torch.clamp(spec, min=min_level))
     else:
@@ -156,9 +154,9 @@ def melspectrogram(y, config, squeeze=True):
     mel_filter = torch.from_numpy(mel_filter)
     mel_filter = set_device(mel_filter, config.device)
     mel = torch.matmul(mel_filter, spec)
-    if config.normalize == 'db':
+    if config.norm_type == 'db':
         mel = normalize(amp2db(mel), config.min_level_db)
-    elif config.normalize == 'log':
+    elif config.norm_type == 'log':
         min_level = db2amp(config.min_level_db)
         mel = torch.log(torch.clamp(mel, min=min_level))
 
