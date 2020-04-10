@@ -38,30 +38,71 @@ def set_device(x, device):
 
     return x 
 
-def save_checkpoint(checkpoint_path, model, optimizer, learning_rate, iteration, verbose=False):
-    torch.save({'iteration': iteration,
-                'state_dict': model.state_dict(),
-                'optimizer': optimizer.state_dict(),
-                'learning_rate': learning_rate}, checkpoint_path)
+def from_parallel(state_dict):
+    from_parallel = False
+    for key, _ in state_dict.items():
+        if key.find('module.') != -1:
+            from_parallel = True
+            break 
 
-    if verbose:
-        print("Saving model and optimizer state at iteration {} to {}".format(
-            iteration, checkpoint_path))
+    return from_parallel
 
-def load_checkpoint(checkpoint_path, model, optimizer):
+def unwrap_parallel(state_dict):
+    new_state_dict = {}
+    for key, value in state_dict.items():
+        new_key = key.replace('module.', '')
+        new_state_dict[new_key] = value
+
+    return new_state_dict
+
+def load_weights(checkpoint_path):
+    state_dict = torch.load(checkpoint_path, map_location='cpu')['state_dict']
+    if from_parallel: 
+        state_dict = unwrap_parallel(state_dict)
+
+    return state_dict
+
+def save_checkpoint(checkpoint_path, model, optimizer=None, learning_rate=None, iteration=None, verbose=False):
+    checkpoint = {'state_dict': model.state_dict()}
+    if optimizer is not None:
+        checkpoint['optimizer'] = optimizer.state_dict()
+    if learning_rate is not None:
+        checkpoint['learning_rate'] = learning_rate
+    if iteration is not None:
+        checkpoint['iteration'] = iteration
+    
+    torch.save(checkpoint, checkpoint_path)
+
+    if verbose: 
+        print("Saving checkpoint to %s" % (checkpoint_path))
+
+def load_checkpoint(checkpoint_path, model, optimizer=None):
     assert os.path.isfile(checkpoint_path)
-    print("Loading checkpoint '{}'".format(checkpoint_path))
 
-    checkpoint_dict = torch.load(checkpoint_path, map_location='cpu')
-    model.load_state_dict(checkpoint_dict['state_dict'])
-    optimizer.load_state_dict(checkpoint_dict['optimizer'])
-    learning_rate = checkpoint_dict['learning_rate']
-    iteration = checkpoint_dict['iteration']
+    checkpoint = torch.load(checkpoint_path, map_location='cpu')
+    state_dict = checkpoint['state_dict']
+    if from_parallel: 
+        state_dict = unwrap_parallel(state_dict)
 
-    print("Loaded checkpoint '{}' from iteration {}" .format(
-        checkpoint_path, iteration))
+    model.load_state_dict(state_dict)
 
-    return model, optimizer, learning_rate, iteration
+    objects = [model]
+    if 'optimizer' in checkpoint and optimizer is not None:
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        objects.append(optimizer)
+    if 'learning_rate' in checkpoint:
+        learning_rate = checkpoint['learning_rate']
+        objects.append(learning_rate)
+    if 'iteration' in checkpoint:
+        iteration = checkpoint['iteration']
+        objects.append(iteration)
+
+    print("Loaded checkpoint from %s" % (checkpoint_path))
+
+    if len(objects) == 1:
+        objects = objects[0]
+
+    return objects
 
 class LossLog(object):
     def __init__(self):
