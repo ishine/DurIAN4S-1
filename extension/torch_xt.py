@@ -76,7 +76,7 @@ def save_checkpoint(checkpoint_path, model, optimizer=None, learning_rate=None, 
     if verbose: 
         print("Saving checkpoint to %s" % (checkpoint_path))
 
-def load_checkpoint(checkpoint_path, model, optimizer=None):
+def load_checkpoint(checkpoint_path, model, optimizer=None, verbose=False):
     assert os.path.isfile(checkpoint_path)
 
     checkpoint = torch.load(checkpoint_path, map_location='cpu')
@@ -97,7 +97,8 @@ def load_checkpoint(checkpoint_path, model, optimizer=None):
         iteration = checkpoint['iteration']
         objects.append(iteration)
 
-    print("Loaded checkpoint from %s" % (checkpoint_path))
+    if verbose:
+        print("Loaded checkpoint from %s" % (checkpoint_path))
 
     if len(objects) == 1:
         objects = objects[0]

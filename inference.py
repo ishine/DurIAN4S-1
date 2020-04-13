@@ -14,6 +14,7 @@ from file_xt import FileXT
 from torch_xt import set_device, load_checkpoint
 from tacotron import Tacotron
 from wavernn import WaveRNN 
+from reconstruct import wavernn_infer, waveglow_infer
 
 def main():
     config = ConfigXT()
@@ -35,16 +36,16 @@ def main():
         x, y_prev, _ = set_device(batch, config.device)
         
         y_gen, _ = model(x, y_prev)
-        mel.append(y_gen.data.cpu())
+        mel.append(y_gen.data)
         y_prev = y_gen[...,-1].unsqueeze(-1)
 
-    print(colored('Running WaveRNN with ', 'blue', attrs=['bold']) + config.wavernn_path)
     mel = torch.cat(mel, dim=-1)
-    wavernn = WaveRNN(config)
-    wavernn.load_state_dict(torch.load(config.wavernn_path, map_location='cpu'))
+    if config.vocoder == 'wavernn':
+        wave = wavernn_infer(mel, config)
+    elif config.vocoder == 'waveglow':
+        wave = waveglow_infer(mel, config)
 
-    wave = wavernn.infer(mel).cpu()
-    savename = config.model_path.replace('.pt', '_speaker') + str(config.speaker) + '_' + load.basename
+    savename = config.model_path.replace('.pt', '_') + FileXT(config.vocoder_path).basestem + '_speaker' + str(config.speaker) + '_' + load.basename
     torchaudio.save(savename, wave, config.sample_rate)
 
     print(colored('Audio generated to ', 'blue', attrs=['bold']) + savename)

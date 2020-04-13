@@ -78,6 +78,9 @@ def main():
             loss_savename = os.path.join(checkpoint_path, 'loss.pt')
             torch.save(losses, loss_savename)
 
+            savename = os.path.join(checkpoint_path, 'latest_checkpoint.pt')
+            save_checkpoint(savename, model, optimizer, learn_rate, loss_train.iteration)
+
             if epoch%config.save_epoch == 0:
                 savename = os.path.join(checkpoint_path, 'epoch' + str(epoch) + '.pt')
                 save_checkpoint(savename, model, optimizer, learn_rate, loss_train.iteration)

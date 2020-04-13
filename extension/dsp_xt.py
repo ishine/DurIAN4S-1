@@ -30,7 +30,7 @@ def frame(x, win_size, hop_size):
 
 def to_tensor(x):
     if not isinstance(x, torch.Tensor):
-        x = torch.tensor(x)
+        x = torch.tensor(x, dtype=torch.float)
 
     return x 
 
@@ -128,6 +128,35 @@ def stft(y, config):
 
     return spec
 
+def istft(magnitude, phase, config):
+    window = torch.hann_window(config.win_size)
+    stft_matrix = torch.stack((magnitude*torch.cos(phase), magnitude*torch.sin(phase)), dim=-1)
+    stft_matrix, window = set_device((stft_matrix, window), config.device)
+    y = torchaudio.functional.istft(stft_matrix,
+                                    n_fft=config.fft_size,
+                                    hop_length=config.hop_size,
+                                    win_length=config.win_size,
+                                    window=window)
+
+    return y
+
+def magphase(y, config):
+    window = torch.hann_window(config.win_size)
+    y, window = set_device((y, window), config.device)
+    stft_matrix = torch.stft(y, 
+                             n_fft=config.fft_size, 
+                             hop_length=config.hop_size, 
+                             win_length=config.fft_size,
+                             window=window)
+    
+    real = stft_matrix[...,0]
+    imag = stft_matrix[...,1]
+
+    magnitude = torch.sqrt(real**2 + imag**2)
+    phase = torch.atan2(imag.data, real.data)
+
+    return magnitude, phase
+
 def spectrogram(y, config, squeeze=True):
     spec = stft(y, config)
     if config.norm_type == 'db':
@@ -159,7 +188,7 @@ def melspectrogram(y, config, squeeze=True):
     elif config.norm_type == 'log':
         min_level = db2amp(config.min_level_db)
         mel = torch.log(torch.clamp(mel, min=min_level))
-
+        
     if squeeze:
         mel = mel.squeeze(0)
 
