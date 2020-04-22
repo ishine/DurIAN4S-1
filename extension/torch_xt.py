@@ -80,7 +80,13 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, verbose=False):
     assert os.path.isfile(checkpoint_path)
 
     checkpoint = torch.load(checkpoint_path, map_location='cpu')
-    state_dict = checkpoint['state_dict']
+    if 'state_dict' in checkpoint:
+        state_dict = checkpoint['state_dict']
+    elif 'model' in checkpoint:
+        state_dict = checkpoint['model'].state_dict()
+    else:
+        raise AssertionError("No model weight found in checkpoint, %s" % (checkpoint_path))
+
     if from_parallel: 
         state_dict = unwrap_parallel(state_dict)
 

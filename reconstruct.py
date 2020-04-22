@@ -25,11 +25,11 @@ def wavernn_infer(mel, config):
 
 def waveglow_infer(mel, config):
     print(colored('Running WaveGlow with ', 'blue', attrs=['bold']) + config.vocoder_path)
-    '''
+
     waveglow = WaveGlow(config)
-    waveglow = load_checkpoint(config.vocoder_path, waveglow)
-    '''
-    waveglow = torch.hub.load('nvidia/DeepLearningExamples:torchhub', 'nvidia_waveglow')
+    waveglow, _, _ = load_checkpoint(config.vocoder_path, waveglow)
+
+    #waveglow = torch.hub.load('nvidia/DeepLearningExamples:torchhub', 'nvidia_waveglow')
     waveglow = waveglow.remove_weightnorm(waveglow)
     waveglow = set_device(waveglow, config.device)
     waveglow.eval()
