@@ -78,7 +78,7 @@ def main():
     savename = config.vocoder_path.replace('.pt', '_') + load.basename
     torchaudio.save(savename, wave, config.sample_rate)
 
-    print(colored('Audio generated to ', 'blue', attrs=['bold']) + savename)
+    print(colored('Audio generated to ', 'blue', attrs=['bold']) + savename + '\n')
 
 if __name__ == "__main__":
     main()

@@ -5,7 +5,7 @@ sys.path.append('g2p')
 import os 
 import torch 
 import torchaudio
-from madmom.utils.midi import MIDIFile
+from madmom.io.midi import load_midi
 from multiprocessing import Pool
 from functools import partial
 
@@ -60,13 +60,15 @@ def load_wav(filename, config):
 
     return f0, rmse, mel
 
+'''
 def load_mid(filename):
     midi_file = MIDIFile.from_file(filename)
     midi = midi_file.notes(unit='seconds')
 
     return midi
+'''
 
-def load_txt(filename):
+def load_text(filename):
     text_file = open(filename)
     text = text_file.read().replace(' ', '').replace('\n', '')
     text = korean_g2p.encode(text)
@@ -221,8 +223,8 @@ def preprocess(filename, index, config, verbose=True):
     mid = FileXT(dataset_path, 'mid', basename, '.mid')
     wav = FileXT(dataset_path, 'wav', basename, '.wav')
 
-    text = load_txt(txt.filename)
-    midi = load_mid(mid.filename)
+    text = load_text(txt.filename)
+    midi = load_midi(mid.filename)
     features = load_wav(wav.filename, config)
     phoneme, duration, position, mel_range = get_alignment(text, midi, config)
 
