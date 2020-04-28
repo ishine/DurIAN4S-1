@@ -12,7 +12,7 @@ from functools import partial
 import korean_g2p
 import dsp_xt as dsp 
 from config_xt import ConfigXT
-from file_xt import FileXT
+from file_xt import FileXT, create_path
 
 class Range(object):
     def __init__(self, start=None, duration=None, frame_rate=1):
@@ -282,8 +282,7 @@ def flatlist(x):
 '''
 def main():
     config = ConfigXT()
-    if not os.path.exists(config.feature_path):
-        os.makedirs(config.feature_path)
+    create_path(config.feature_path, action="override")
 
     set_list = ['train', 'valid']
 

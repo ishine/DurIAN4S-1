@@ -9,7 +9,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 import dataprocess
-from file_xt import FileXT
+from file_xt import FileXT, create_path
 from config_xt import ConfigXT
 from torch_xt import set_device, save_checkpoint, LossLog
 from tacotron import Tacotron
@@ -21,7 +21,7 @@ def main():
 
     checkpoint_path = config.checkpoint_path
     if not config.test_run:
-        checkpoint_path = FileXT(config.checkpoint_path, '').create_path()
+        checkpoint_path = create_path(config.checkpoint_path)
         config.save(os.path.join(checkpoint_path, config_basename))
         writer = SummaryWriter(checkpoint_path)
 
