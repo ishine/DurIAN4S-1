@@ -59,38 +59,38 @@ def collate_fn(batch):
 
     batch_size = len(batch)
     mel_size = mel[0].size(0)
-    p_lens = torch.zeros(len(batch)).long()
-    m_lens = torch.zeros(len(batch)).long()
+    x_lens = torch.zeros(len(batch)).long()
+    y_lens = torch.zeros(len(batch)).long()
 
     for i in range(len(batch)):
-        p_lens[i] = phoneme[i].size(0)
-        m_lens[i] = mel[i].size(1)
+        x_lens[i] = phoneme[i].size(0)
+        y_lens[i] = mel[i].size(1)
 
-    m_lens, indices = torch.sort(m_lens, descending=True)
-    p_lens = p_lens[indices]
+    y_lens, indices = torch.sort(y_lens, descending=True)
+    x_lens = x_lens[indices]
 
-    phoneme_padded = torch.zeros(batch_size, max(p_lens)).long()
-    speaker_padded = torch.zeros(batch_size, max(p_lens)).long()
-    duration_padded = torch.zeros(batch_size, max(p_lens)).long()
-    f0_padded = torch.zeros(batch_size, max(m_lens))
-    rmse_padded = torch.zeros(batch_size, max(m_lens))
-    position_padded = torch.zeros(batch_size, max(m_lens))
+    phoneme_padded = torch.zeros(batch_size, max(x_lens)).long()
+    speaker_padded = torch.zeros(batch_size, max(x_lens)).long()
+    duration_padded = torch.zeros(batch_size, max(x_lens)).long()
+    f0_padded = torch.zeros(batch_size, max(y_lens))
+    rmse_padded = torch.zeros(batch_size, max(y_lens))
+    position_padded = torch.zeros(batch_size, max(y_lens))
 
-    mel_prev_padded = torch.zeros(batch_size, mel_size, max(m_lens))
-    mel_padded = torch.zeros(batch_size, mel_size, max(m_lens))
+    mel_prev_padded = torch.zeros(batch_size, mel_size, max(y_lens))
+    mel_padded = torch.zeros(batch_size, mel_size, max(y_lens))
 
     for i in range(batch_size):
-        p_len = p_lens[i].item()
-        m_len = m_lens[i].item()
-        phoneme_padded[i,:p_len] = phoneme[indices[i]]
-        speaker_padded[i,:p_len] = speaker[indices[i]] 
-        duration_padded[i,:p_len] = duration[indices[i]]
-        f0_padded[i,:m_len] = f0[indices[i]]
-        rmse_padded[i,:m_len] = rmse[indices[i]]
-        position_padded[i,:m_len] = position[indices[i]]
+        x_len = x_lens[i].item()
+        y_len = y_lens[i].item()
+        phoneme_padded[i,:x_len] = phoneme[indices[i]]
+        speaker_padded[i,:x_len] = speaker[indices[i]] 
+        duration_padded[i,:x_len] = duration[indices[i]]
+        f0_padded[i,:y_len] = f0[indices[i]]
+        rmse_padded[i,:y_len] = rmse[indices[i]]
+        position_padded[i,:y_len] = position[indices[i]]
 
-        mel_prev_padded[i,:,:m_len] = mel_prev[indices[i]]
-        mel_padded[i,:,:m_len] = mel[indices[i]]
+        mel_prev_padded[i,:,:y_len] = mel_prev[indices[i]]
+        mel_padded[i,:,:y_len] = mel[indices[i]]
 
     x = (phoneme_padded, (speaker_padded, duration_padded, f0_padded, rmse_padded, position_padded))
 

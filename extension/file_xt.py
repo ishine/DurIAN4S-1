@@ -11,6 +11,25 @@ def duplicate_path(path):
 
     return duplicated_path
 
+def create_path(path, action="duplicate", verbose=True):
+    created_path = path
+    if os.path.exists(path):
+        if action is "override":
+            os.makedirs(path)
+        elif action is "duplicate":
+            created_path = duplicate_path(path)
+        elif action is "error":
+            raise AssertionError("\'%s\' already exists." % path)
+        else: 
+            raise AssertionError("Invalid action is used.")
+    else:
+        os.makedirs(path)
+
+    if verbose:
+        print("\'%s\' is created." % (created_path))
+
+    return created_path
+
 class FileXT(object):
     def __init__(self, *args):
         path_list = []
@@ -38,22 +57,3 @@ class FileXT(object):
         self.filepath = os.path.dirname(filestem)
         self.filename = filestem + self.ext
         self.filestem = filestem
-
-    def create_path(self, action="duplicate", verbose=True):
-        created_path = self.filepath
-        if os.path.exists(self.filepath):
-            if action is "override":
-                os.makedirs(self.filepath)
-            elif action is "duplicate":
-                created_path = duplicate_path(self.filepath)
-            elif action is "error":
-                raise AssertionError("\'%s\' already exists." % self.filepath)
-            else: 
-                raise AssertionError("Invalid action is used.")
-        else:
-            os.makedirs(self.filepath)
-
-        if verbose:
-            print("\'%s\' is created." % (created_path))
-
-        return created_path
