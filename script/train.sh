@@ -1,3 +1,3 @@
-python train.py -f config/default.yml \
-                --batch_size 64 \
-                --device 1
+python train.py -f config/max_length360.yml \
+                --batch_size 32 \
+                --device 2

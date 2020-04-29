@@ -81,8 +81,8 @@ class UpsampleNetwork(nn.Module):
 class WaveRNN(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.mode = config.mode
-        self.pad = config.pad
+        self.mode = config.voc_mode
+        self.pad = config.voc_pad
         if self.mode == 'RAW':
             self.n_classes = 2**config.bits
         elif self.mode == 'MOL':
@@ -93,26 +93,26 @@ class WaveRNN(nn.Module):
         # List of rnns to call `flatten_parameters()` on
         self._to_flatten = []
 
-        self.rnn_size = config.rnn_size
-        self.aux_size = config.res_out_size//4
+        self.rnn_size = config.voc_rnn_size
+        self.aux_size = config.voc_res_out_size//4
         self.hop_size = config.hop_size
         self.sample_rate = config.sample_rate
 
         self.upsample = UpsampleNetwork(config.mel_size, 
-                                        config.upsample_factors, 
-                                        config.compute_size, 
-                                        config.res_blocks, 
-                                        config.res_out_size, 
-                                        config.pad)
-        self.I = nn.Linear(config.mel_size + self.aux_size + 1, config.rnn_size)
+                                        config.voc_upsample_factors, 
+                                        config.voc_compute_size, 
+                                        config.voc_res_blocks, 
+                                        config.voc_res_out_size, 
+                                        config.voc_pad)
+        self.I = nn.Linear(config.mel_size + self.aux_size + 1, config.voc_rnn_size)
 
-        self.rnn1 = nn.GRU(config.rnn_size, config.rnn_size, batch_first=True)
-        self.rnn2 = nn.GRU(config.rnn_size + self.aux_size, config.rnn_size, batch_first=True)
+        self.rnn1 = nn.GRU(config.voc_rnn_size, config.voc_rnn_size, batch_first=True)
+        self.rnn2 = nn.GRU(config.voc_rnn_size + self.aux_size, config.voc_rnn_size, batch_first=True)
         self._to_flatten += [self.rnn1, self.rnn2]
 
-        self.fc1 = nn.Linear(config.rnn_size + self.aux_size, config.fc_size)
-        self.fc2 = nn.Linear(config.fc_size + self.aux_size, config.fc_size)
-        self.fc3 = nn.Linear(config.fc_size, self.n_classes)
+        self.fc1 = nn.Linear(config.voc_rnn_size + self.aux_size, config.voc_fc_size)
+        self.fc2 = nn.Linear(config.voc_fc_size + self.aux_size, config.voc_fc_size)
+        self.fc3 = nn.Linear(config.voc_fc_size, self.n_classes)
 
         self.register_buffer('step', torch.zeros(1, dtype=torch.long))
 
@@ -120,9 +120,9 @@ class WaveRNN(nn.Module):
         self._flatten_parameters()
 
         self.mu_law = config.mu_law
-        self.batched_infer = config.batched_infer
-        self.target_size = config.target_size
-        self.overlap_size = config.overlap_size
+        self.batched_infer = config.voc_batched_infer
+        self.target_size = config.voc_target_size
+        self.overlap_size = config.voc_overlap_size
 
     def forward(self, x, mels):
         device = next(self.parameters()).device  # use same device as parameters

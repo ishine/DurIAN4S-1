@@ -31,20 +31,21 @@ ref_level_db: 20
 
 # Model Configuration
 text_embed_size: 256
-prenet_size: [256, 128]
-encoder_size: 128
-encoder_K: 16
-
 speaker_embed_size: 8
-alignment_size: 256
 
-decoder_size: 512
-postnet_size: 256
-postnet_K: 8
+dur_prenet_size: [256, 128]
+dur_encoder_size: 128
+dur_encoder_K: 16
 
-num_highways: 4
-reduction: 1
-dropout: 0.5
+dur_alignment_size: 256
+
+dur_decoder_size: 512
+dur_postnet_size: 256
+dur_postnet_K: 8
+
+dur_num_highways: 4
+dur_reduction: 1
+dur_dropout: 0.5
 clip_grad_norm: 1.0
 
 # Optimizer Configuration 

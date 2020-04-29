@@ -56,7 +56,10 @@ def load_wav(filename, config):
     rmse = dsp.rmse(y, config.win_size, config.hop_size)
 
     mel = dsp.melspectrogram(y, config).cpu()
-    mel = torch.cat((torch.zeros(config.mel_size, 1), mel), dim=1) # For previous frame
+
+    f0 = torch.cat((torch.zeros(1), f0), dim=0) # For previous frame
+    rmse = torch.cat((torch.zeros(1), rmse), dim=0)
+    mel = torch.cat((torch.zeros(config.mel_size, 1), mel), dim=1)
 
     return f0, rmse, mel
 
@@ -112,6 +115,7 @@ def segment_validation(duration, mel_range):
 
 def get_alignment(text, midi, config):
     frame_rate = config.sample_rate/config.hop_size
+    note = SegmentList()
     phoneme = SegmentList()
     duration = SegmentList()
     position = SegmentList()
@@ -132,7 +136,7 @@ def get_alignment(text, midi, config):
         if i < len(midi) - 1:
             next_range = Range(midi[i+1][0], midi[i+1][2], frame_rate)
         
-        if len(phoneme.segment) == 0:
+        if len(note.segment) == 0:
             if curr_range.start - mel_range.start > config.max_unvoice:
                 mel_range.start = curr_range.start - config.max_unvoice
             prev_range = Range(mel_range.start, 0, 1)
@@ -153,6 +157,7 @@ def get_alignment(text, midi, config):
         if i == len(midi) - 1:
             split = True
 
+        n = curr_range.duration*[midi[i][1] - config.min_note]
         t = text[i].to_list()
         d = get_duration(text[i], curr_range.duration, config.length_c)
         p = get_position(curr_range.duration)
@@ -160,10 +165,12 @@ def get_alignment(text, midi, config):
         # Condition for breath attack 
         d_unvoice = curr_range.start - prev_range.end
         if d_unvoice > 0:
+            n = d_unvoice*[0] + n
             t = [0] + t
             d = [d_unvoice] + d
             p = get_position(d_unvoice) + p 
 
+        note.extend(n)
         phoneme.extend(t)
         duration.extend(d)
         position.extend(p)
@@ -171,6 +178,7 @@ def get_alignment(text, midi, config):
         if split:
             mel_range.end = curr_range.end 
             if next_range.start - curr_range.end > config.length_offset:
+                note.extend(config.length_offset*[0])
                 phoneme.extend([0])
                 duration.extend([config.length_offset])
                 position.extend(get_position(config.length_offset))
@@ -179,6 +187,7 @@ def get_alignment(text, midi, config):
             if segment_validation(duration, mel_range):
                 raise AssertionError("Invalid segment found!")
 
+            note.split()
             phoneme.split()
             duration.split()
             position.split()
@@ -188,7 +197,7 @@ def get_alignment(text, midi, config):
             if next_range.start - curr_range.end > config.length_offset:
                 mel_range.start = curr_range.end + config.length_offset
 
-    return phoneme.list, duration.list, position.list, mel_range_list
+    return note.list, phoneme.list, duration.list, position.list, mel_range_list
 
 def find_error(inputs):
     phoneme, speaker, duration, f0, rmse, position, mel = inputs 
@@ -226,25 +235,25 @@ def preprocess(filename, index, config, verbose=True):
     text = load_text(txt.filename)
     midi = load_midi(mid.filename)
     features = load_wav(wav.filename, config)
-    phoneme, duration, position, mel_range = get_alignment(text, midi, config)
+    note, phoneme, duration, position, mel_range = get_alignment(text, midi, config)
 
     speaker = []
     f0 = []
     rmse = []
     mel = []
     for i in range(len(mel_range)):
-        if mel_range[i][-1].item() >= features[0].size(0):
-            mel_range[i] = mel_range[i][mel_range[i] < features[0].size(0)]
+        if mel_range[i][-1].item() >= features[0].size(0) - 1:
+            mel_range[i] = mel_range[i][mel_range[i] < features[0].size(0) - 1]
             position[i] = position[i][:mel_range[i].size(0)]
 
         speaker.append(torch.full([phoneme[i].size(0)], fill_value=index).long())
-        f0.append(features[0][mel_range[i]])
-        rmse.append(features[1][mel_range[i]])
 
         extended_range = torch.cat((mel_range[i], mel_range[i][-1:] + 1))
+        f0.append(features[0][extended_range])
+        rmse.append(features[1][extended_range])
         mel.append(features[2][:,extended_range])
 
-    data = phoneme, speaker, duration, f0, rmse, position, mel
+    data = note, phoneme, speaker, duration, f0, rmse, position, mel
     
     if verbose:
         print(basename)

@@ -12,7 +12,7 @@ import dataprocess
 from file_xt import FileXT, create_path
 from config_xt import ConfigXT
 from torch_xt import set_device, save_checkpoint, LossLog
-from tacotron import Tacotron
+from durian import DurIAN
 
 def main():
     config = ConfigXT()
@@ -25,8 +25,8 @@ def main():
         config.save(os.path.join(checkpoint_path, config_basename))
         writer = SummaryWriter(checkpoint_path)
 
-    dataloader = dataprocess.load_train(config)
-    model = Tacotron(config)
+    dataloader = dataprocess.load_train(config, model_type='durian')
+    model = DurIAN(config)
     model = set_device(model, config.device)
     criterion = torch.nn.L1Loss()
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learn_rate, weight_decay=config.weight_decay)
