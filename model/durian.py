@@ -24,6 +24,11 @@ class Alignment(nn.Module):
     def __init__(self, config):
         super(Alignment, self).__init__()
         self.embedding_speaker = nn.Embedding(config.num_speaker, config.speaker_embed_size)
+        self.acoustic_embedded = config.acoustic_embedded
+        if self.acoustic_embedded:
+            self.embedding_f0 = nn.Linear(1, config.f0_embed_size)
+            self.embedding_rmse = nn.Linear(1, config.rmse_embed_size)
+
         self.linear = nn.Linear(2*config.dur_encoder_size + config.speaker_embed_size, config.dur_alignment_size)
 
     def forward(self, x, conditions, max_y_len):
@@ -42,6 +47,9 @@ class Alignment(nn.Module):
         f0 = f0.unsqueeze(-1)
         rmse = rmse.unsqueeze(-1)
         position = position.unsqueeze(-1)
+        if self.acoustic_embedded:
+            f0 = self.embedding_f0(f0)
+            rmse = self.embedding_rmse(rmse)
 
         return torch.cat((x_expanded, f0, rmse, position), dim=-1)
 
@@ -53,7 +61,15 @@ class Decoder(nn.Module):
         self.reduction = config.dur_reduction
 
         self.prenet = Prenet(config.mel_size, config.dur_prenet_size)
-        self.rnn_projection = nn.Linear(config.dur_alignment_size + 3 + config.dur_prenet_size[-1], config.dur_decoder_size)
+        if config.acoustic_embedded:
+            self.rnn_projection = nn.Linear(config.dur_alignment_size + 
+                                            config.f0_embed_size + 
+                                            config.rmse_embed_size + 1 + 
+                                            config.dur_prenet_size[-1],
+                                            config.dur_decoder_size)
+        else:
+            self.rnn_projection = nn.Linear(config.dur_alignment_size + 3 + config.dur_prenet_size[-1], config.dur_decoder_size)
+
         self.decoder_rnn = nn.ModuleList(
             [nn.GRUCell(config.dur_decoder_size, config.dur_decoder_size) for _ in range(2)])
         self.mel_projection = nn.Linear(config.dur_decoder_size, config.dur_reduction*config.mel_size)
